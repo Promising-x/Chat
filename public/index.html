@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>小空间 · 两人聊天 + DIY</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- 加入房间界面 -->
+  <div id="join-screen" class="join-screen">
+    <div class="join-card">
+      <h1>🏠 小空间</h1>
+      <p class="sub">两个人 · 一起聊天 + 一起布置</p>
+      <label for="join-name">你的昵称</label>
+      <input id="join-name" maxlength="20" placeholder="例如：小明" autocomplete="off">
+      <label for="join-room">房间号</label>
+      <div class="room-row">
+        <input id="join-room" maxlength="32" placeholder="输入房间号，或点随机" autocomplete="off">
+        <button id="random-room" class="btn ghost" title="随机房间号">🎲 随机</button>
+      </div>
+      <button id="join-btn" class="btn primary block">进入房间</button>
+      <p class="hint">两个人在不同浏览器打开同一房间号，就能一起聊天和布置。</p>
+    </div>
+  </div>
+
+  <!-- 主界面 -->
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <div class="brand">🏠 小空间</div>
+      <div class="room-info">
+        <span class="room-label">房间</span>
+        <span id="room-code" class="room-code"></span>
+        <button id="copy-link" class="btn tiny">复制邀请链接</button>
+      </div>
+      <div id="users" class="users"></div>
+      <div id="conn" class="conn">连接中…</div>
+    </header>
+
+    <div class="layout">
+      <aside class="palette">
+        <h2>组件</h2>
+        <button class="palette-item" data-add="note">📝 便签</button>
+        <button class="palette-item" data-add="image">🖼️ 照片</button>
+        <button class="palette-item" data-add="clock">🕐 时钟</button>
+        <button class="palette-item" data-add="todo">✅ 待办清单</button>
+        <button class="palette-item" data-add="color">🎨 色块</button>
+        <button class="palette-item" data-add="sticker">😺 贴纸</button>
+        <p class="palette-hint">点击添加组件到画布；拖动可移动，右下角可缩放；选中后按 Delete 删除。</p>
+      </aside>
+
+      <main id="canvas-wrap" class="canvas-wrap">
+        <div id="canvas" class="canvas"></div>
+      </main>
+
+      <aside class="chat-panel">
+        <h2>聊天</h2>
+        <div id="chat-messages" class="chat-messages"></div>
+        <div id="typing" class="typing"></div>
+        <form id="chat-form" class="chat-form" autocomplete="off">
+          <input id="chat-input" maxlength="1000" placeholder="说点什么…">
+          <button class="btn primary" type="submit">发送</button>
+        </form>
+      </aside>
+    </div>
+  </div>
+
+  <!-- 隐藏控件 -->
+  <input type="file" id="image-file" accept="image/*" hidden>
+  <input type="color" id="color-picker" hidden>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
