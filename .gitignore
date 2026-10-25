@@ -3,3 +3,6 @@ node_modules/
 rooms.json
 *.log
 .DS_Store
+.ssh/
+ca-bundle.crt
+ca-bundle-system.pem
