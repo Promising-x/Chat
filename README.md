@@ -21,6 +21,12 @@ npm start
 
 ## 部署到 Render（免费）
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Promising-x/Chat)
+
+点上面的按钮 → 用 GitHub 登录 → 确认部署，Render 会自动读取 `render.yaml`。
+
+手动方式：
+
 1. 把本仓库推送到 GitHub
 2. 登录 [render.com](https://render.com)，选择 New → Blueprint
 3. 连接你的 GitHub 仓库，Render 会读取 `render.yaml` 自动部署
