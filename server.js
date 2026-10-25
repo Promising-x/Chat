@@ -1,4 +1,4 @@
-// 两人聊天 + 同步 DIY 空间 —— Node 服务端（依赖 ws）
+// 两人聊天 + 同步 DIY 空间 —— Node 服务端（依赖 ws，可选 mongodb）
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -8,6 +8,7 @@ const { WebSocketServer } = require('ws');
 const PORT = process.env.PORT || 3000;
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const STATE_FILE = path.join(__dirname, 'rooms.json');
+const MONGODB_URI = process.env.MONGODB_URI || '';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -51,8 +52,9 @@ const server = http.createServer((req, res) => {
   });
 });
 
-// ---------- 房间存储 ----------
+// ---------- 房间存储（内存为主，持久化到 MongoDB 或本地文件） ----------
 const rooms = new Map(); // id -> { space: [], messages: [], clients: Set }
+let db = null;          // { client, col } 或 null
 
 function loadRooms() {
   try {
@@ -64,26 +66,70 @@ function loadRooms() {
         clients: new Set(),
       });
     }
-    console.log(`[rooms] 已从磁盘恢复 ${rooms.size} 个房间`);
+    console.log(`[rooms] 已从本地文件恢复 ${rooms.size} 个房间`);
   } catch {
     // 首次运行或文件损坏则忽略
   }
+}
+
+async function connectMongo() {
+  if (!MONGODB_URI) return null;
+  const { MongoClient } = require('mongodb');
+  const client = new MongoClient(MONGODB_URI, { serverSelectionTimeoutMS: 8000 });
+  await client.connect();
+  const col = client.db('xiaokongjian').collection('rooms');
+  return { client, col };
+}
+
+async function loadRoomsFromMongo(col) {
+  const docs = await col.find({}).toArray();
+  let count = 0;
+  for (const doc of docs) {
+    rooms.set(doc._id, {
+      space: Array.isArray(doc.space) ? doc.space : [],
+      messages: Array.isArray(doc.messages) ? doc.messages : [],
+      clients: new Set(),
+    });
+    count++;
+  }
+  return count;
 }
 
 let saveTimer = null;
 function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    const obj = {};
-    for (const [id, r] of rooms) {
-      obj[id] = { space: r.space.slice(0, MAX_ITEMS), messages: r.messages.slice(-MAX_MSG) };
-    }
-    try {
-      fs.writeFileSync(STATE_FILE, JSON.stringify(obj));
-    } catch (e) {
-      console.error('[rooms] 保存失败', e.message);
-    }
+    if (db) return saveToMongo();
+    saveToFile();
   }, 800);
+}
+
+function saveToFile() {
+  const obj = {};
+  for (const [id, r] of rooms) {
+    obj[id] = { space: r.space.slice(0, MAX_ITEMS), messages: r.messages.slice(-MAX_MSG) };
+  }
+  try {
+    fs.writeFileSync(STATE_FILE, JSON.stringify(obj));
+  } catch (e) {
+    console.error('[rooms] 保存失败', e.message);
+  }
+}
+
+async function saveToMongo() {
+  const ops = [];
+  for (const [id, r] of rooms) {
+    ops.push(db.col.updateOne(
+      { _id: id },
+      { $set: { space: r.space.slice(0, MAX_ITEMS), messages: r.messages.slice(-MAX_MSG), updatedAt: new Date() } },
+      { upsert: true }
+    ));
+  }
+  try {
+    await Promise.all(ops);
+  } catch (e) {
+    console.error('[db] 保存失败', e.message);
+  }
 }
 
 function normalizeRoomId(raw) {
@@ -304,7 +350,21 @@ function leaveRoom(ws) {
   ws.user = null;
 }
 
-loadRooms();
-server.listen(PORT, () => {
-  console.log(`小空间已启动：http://localhost:${PORT}`);
-});
+// ---------- 启动 ----------
+(async function start() {
+  loadRooms();
+  if (MONGODB_URI) {
+    try {
+      const mongo = await connectMongo();
+      db = { client: mongo.client, col: mongo.col };
+      const n = await loadRoomsFromMongo(db.col);
+      console.log(`[db] 已连接 MongoDB，加载 ${n} 个房间`);
+    } catch (e) {
+      db = null;
+      console.error('[db] MongoDB 连接失败，退回本地文件/内存模式:', e.message);
+    }
+  }
+  server.listen(PORT, () => {
+    console.log(`小空间已启动：http://localhost:${PORT}`);
+  });
+})();

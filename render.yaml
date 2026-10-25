@@ -6,3 +6,6 @@ services:
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /
+    envVars:
+      - key: MONGODB_URI
+        sync: false

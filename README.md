@@ -29,6 +29,20 @@ npm start
 > 注意：Render 免费版实例闲置 15 分钟后会休眠，首次打开需等待 30~60 秒；
 > 免费版磁盘是临时的，重新部署或重启后聊天记录会清空（画布布置同样会重置）。
 
+## 长期保存（MongoDB Atlas 免费云数据库）
+
+Render 免费版磁盘是临时的，重启会清空。配置 `MONGODB_URI` 环境变量后，数据会保存到 MongoDB Atlas（免费 512MB），永久保留。
+
+1. 注册 https://www.mongodb.com/cloud/atlas ，创建免费 M0 集群
+2. 在 Database Access 创建数据库用户（记下用户名和密码）
+3. 在 Network Access 添加 `0.0.0.0/0`（允许所有来源访问）
+4. 点 Connect → Drivers，复制连接串，把 `<password>` 换成真实密码，形如：
+   `mongodb+srv://user:pass@cluster0.xxx.mongodb.net/?retryWrites=true&w=majority`
+5. 在 Render 服务的 Environment 里添加 `MONGODB_URI`，值为上面的连接串
+6. 重新部署后生效
+
+> 没有配置 `MONGODB_URI` 时自动退回本地 `rooms.json` 文件存储，两种模式兼容，本地开发不受影响。
+
 ## 内网穿透（临时公网链接）
 
 ```bash
